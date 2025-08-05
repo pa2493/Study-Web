@@ -1,3 +1,4 @@
+// TODO: ADD YOUR CONFIG HERE
  const firebaseConfig = {
     apiKey: "AIzaSyAcOs3hyYea3BM55R5GB-F0hObDbxgNrqA",
     authDomain: "study-web-8cd99.firebaseapp.com",
@@ -8,131 +9,92 @@
     appId: "1:320613093347:web:5bb57a0b5c83fdc0e09ad6",
     measurementId: "G-TNZD8GNJFT"
 
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+const storage = firebase.storage();
 
-let currentChannel = 'general';
-let username = localStorage.getItem('username') || 'User';
-let profilePic = localStorage.getItem('profilePic') || '';
-let studyStartTime = null;
-let totalStudySeconds = parseInt(localStorage.getItem('studyTime')) || 0;
+let currentChannel = "general";
+let userName = "Anonymous";
+let userPhoto = "";
 
-// Load existing data on startup
-window.onload = () => {
-    document.getElementById('username').textContent = username;
-    if (profilePic) {
-        document.getElementById('profile-pic').src = profilePic;
-    }
-    document.getElementById('study-time').textContent = formatTime(totalStudySeconds);
-    loadMessages(currentChannel);
-};
-
-// Switch channels
-function switchChannel(channel) {
-    saveMessages(currentChannel);
-    currentChannel = channel;
-    document.getElementById('channel-name').textContent = `# ${channel}`;
-    loadMessages(channel);
-}
-
-// Set Username
-function setUsername() {
-    const name = prompt('Enter your name:');
-    if (name) {
-        username = name;
-        localStorage.setItem('username', name);
-        document.getElementById('username').textContent = name;
-    }
-}
-
-// Set Profile Picture
-function setProfilePic(input) {
-    const file = input.files[0];
-    const reader = new FileReader();
-    reader.onload = () => {
-        profilePic = reader.result;
-        document.getElementById('profile-pic').src = profilePic;
-        localStorage.setItem('profilePic', profilePic);
-    };
-    if (file) {
-        reader.readAsDataURL(file);
-    }
-}
-
-// Send message
-function sendMessage() {
-    const input = document.getElementById('message-input');
-    const text = input.value.trim();
-    if (text === '') return;
-
-    const chat = document.getElementById('chat');
-    const msg = document.createElement('div');
-    msg.className = 'message';
-
-    const profileImage = document.createElement('img');
-    profileImage.src = profilePic || '';
-    profileImage.alt = 'User';
-    profileImage.width = 30;
-
-    const content = document.createElement('div');
-    content.innerHTML = `<strong>${username}:</strong> ${formatLinks(text)}`;
-    content.style.wordBreak = 'break-word';
-
-    msg.appendChild(profileImage);
-    msg.appendChild(content);
-    chat.appendChild(msg);
-
-    input.value = '';
-    saveMessages(currentChannel);
-    chat.scrollTop = chat.scrollHeight;
-}
-
-// Save messages
-function saveMessages(channel) {
-    localStorage.setItem(`messages_${channel}`, document.getElementById('chat').innerHTML);
-}
+// Refs
+const messagesDiv = document.getElementById("messages");
+const messageForm = document.getElementById("messageForm");
+const messageInput = document.getElementById("messageInput");
+const setNameBtn = document.getElementById("setNameBtn");
+const profilePicInput = document.getElementById("profilePicInput");
 
 // Load messages
 function loadMessages(channel) {
-    const chat = document.getElementById('chat');
-    chat.innerHTML = localStorage.getItem(`messages_${channel}`) || '';
-    chat.scrollTop = chat.scrollHeight;
+  messagesDiv.innerHTML = "";
+  db.ref(`channels/${channel}`).on("child_added", snapshot => {
+    const msg = snapshot.val();
+    const div = document.createElement("div");
+    div.classList.add("message");
+    div.innerHTML = `<img src="${msg.photo}" /> <strong>${msg.name}</strong>: ${msg.text}`;
+    messagesDiv.appendChild(div);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  });
 }
 
-// Format links/images
-function formatLinks(text) {
-    const urlPattern = /(https?:\/\/[^\s]+)/g;
-    return text.replace(urlPattern, (url) => {
-        if (url.match(/\.(jpeg|jpg|gif|png)$/)) {
-            return `<br><img src="${url}" style="max-width:200px; max-height:200px;" />`;
-        }
-        return `<a href="${url}" target="_blank">${url}</a>`;
+// Send message
+messageForm.addEventListener("submit", e => {
+  e.preventDefault();
+  const text = messageInput.value;
+  db.ref(`channels/${currentChannel}`).push({
+    name: userName,
+    photo: userPhoto,
+    text: text
+  });
+  messageInput.value = "";
+});
+
+// Channel switching
+document.querySelectorAll("#channels button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("#channels button").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentChannel = btn.dataset.channel;
+    loadMessages(currentChannel);
+  });
+});
+
+// Set name & photo
+setNameBtn.addEventListener("click", () => {
+  const name = prompt("Enter your name:");
+  if (!name) return;
+
+  profilePicInput.click();
+
+  profilePicInput.onchange = () => {
+    const file = profilePicInput.files[0];
+    if (!file) return;
+
+    const storageRef = storage.ref("profiles/" + file.name);
+    storageRef.put(file).then(snapshot => {
+      snapshot.ref.getDownloadURL().then(url => {
+        userName = name;
+        userPhoto = url;
+        alert("Profile set successfully!");
+      });
     });
-}
+  };
+});
 
-// Study Timer
-function startStudy() {
-    if (studyStartTime === null) {
-        studyStartTime = Date.now();
-        alert("Study timer started!");
-    }
-}
+// Study timer
+let startTime = null;
+document.getElementById("startStudy").onclick = () => {
+  startTime = Date.now();
+  alert("Study started!");
+};
 
-function endStudy() {
-    if (studyStartTime !== null) {
-        const elapsed = Math.floor((Date.now() - studyStartTime) / 1000);
-        totalStudySeconds += elapsed;
-        localStorage.setItem('studyTime', totalStudySeconds.toString());
-        document.getElementById('study-time').textContent = formatTime(totalStudySeconds);
-        studyStartTime = null;
-        alert("Study timer ended!");
-    }
-}
+document.getElementById("endStudy").onclick = () => {
+  if (!startTime) return alert("Start first!");
+  const mins = Math.floor((Date.now() - startTime) / 60000);
+  document.getElementById("studyTime").textContent = `Time studied: ${mins} mins`;
+  startTime = null;
+};
 
-function formatTime(seconds) {
-    if (seconds < 60) return `Total: ${seconds}s`;
-    const mins = Math.floor(seconds / 60);
-    const sec = seconds % 60;
-    return `Total: ${mins}m ${sec}s`;
-}
+// Load default
+loadMessages(currentChannel);
+document.querySelector('[data-channel="general"]').classList.add("active");
