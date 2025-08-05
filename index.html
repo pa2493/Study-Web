@@ -1,56 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Study App</title>
-    <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Study Room</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <h2>Channels</h2>
-        <button onclick="switchChannel('general')"># general</button>
-        <button onclick="switchChannel('doubts')"># doubts</button>
-        <button onclick="switchChannel('resources')"># resources</button>
-        <button onclick="switchChannel('study')"># study</button>
-        <button onclick="switchChannel('vc')">🔊 Voice Chat</button>
-        <hr style="border-color: #444" />
-        <input type="file" accept="image/*" onchange="setProfilePic(this)" />
-        <button onclick="setUsername()">Set Name</button>
+  <div id="app">
+    <header>
+      <h1>📚 Study Space</h1>
+      <button id="setNameBtn">Set Name & Photo</button>
+    </header>
+
+    <div id="channels">
+      <button data-channel="general"># General</button>
+      <button data-channel="doubts"># Doubts</button>
+      <button data-channel="notes"># Notes</button>
+      <button data-channel="resources"># Resources</button>
     </div>
 
-    <!-- Main Section -->
-    <div class="main">
-        <div class="header">
-            <h1 id="channel-name"># general</h1>
-            <div class="user-info">
-                <span id="study-time" class="study-timer">Total: 0s</span>
-                <img id="profile-pic" src="" alt="Profile" />
-                <span id="username">User</span>
-            </div>
-        </div>
-
-        <div id="chat" class="chat"></div>
-
-        <div class="input-area">
-            <input type="text" id="message-input" placeholder="Type your message..." />
-            <button onclick="sendMessage()">Send</button>
-            <button onclick="startStudy()">Start Study</button>
-            <button onclick="endStudy()">End Study</button>
-        </div>
+    <div id="chat">
+      <div id="messages"></div>
+      <form id="messageForm">
+        <input type="text" id="messageInput" placeholder="Type your message..." required />
+        <button type="submit">Send</button>
+      </form>
     </div>
 
-    <script src="script.js"></script>
+    <div id="studyTimer">
+      <button id="startStudy">Start Study</button>
+      <button id="endStudy">End Study</button>
+      <p id="studyTime">Time studied: 0 mins</p>
+    </div>
+  </div>
 
-<!-- Firebase SDKs -->
-<script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-database.js"></script>
-<script src="script.js"></script>
-
+  <!-- Hidden input -->
+  <input type="file" id="profilePicInput" accept="image/*" style="display:none" />
+  
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js"></script>
+  <script src="script.js"></script>
 </body>
-
-
 </html>
