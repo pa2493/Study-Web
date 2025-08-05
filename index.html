@@ -1,46 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Study Room</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Study Chat</title>
   <link rel="stylesheet" href="style.css">
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
 <body>
-  <div id="app">
+  <div class="container">
     <header>
-      <h1>📚 Study Space</h1>
-      <button id="setNameBtn">Set Name & Photo</button>
+      <h1>📚 Study Chat</h1>
+      <div class="user-setup">
+        <input type="text" id="username" placeholder="Enter your name">
+        <input type="file" id="profile-pic" accept="image/*">
+        <button onclick="setUser()">Set Name</button>
+      </div>
     </header>
 
-    <div id="channels">
-      <button data-channel="general"># General</button>
-      <button data-channel="doubts"># Doubts</button>
-      <button data-channel="notes"># Notes</button>
-      <button data-channel="resources"># Resources</button>
-    </div>
+    <main>
+      <div id="channels">
+        <button onclick="switchChannel('general')">#general</button>
+        <button onclick="switchChannel('doubts')">#doubts</button>
+        <button onclick="switchChannel('resources')">#resources</button>
+        <button onclick="switchChannel('study')">#study</button>
+      </div>
+      <div id="chat-box"></div>
+    </main>
 
-    <div id="chat">
-      <div id="messages"></div>
-      <form id="messageForm">
-        <input type="text" id="messageInput" placeholder="Type your message..." required />
-        <button type="submit">Send</button>
-      </form>
-    </div>
-
-    <div id="studyTimer">
-      <button id="startStudy">Start Study</button>
-      <button id="endStudy">End Study</button>
-      <p id="studyTime">Time studied: 0 mins</p>
-    </div>
+    <footer>
+      <input type="text" id="message" placeholder="Type your message">
+      <button onclick="sendMessage()">Send</button>
+      <button onclick="startStudy()">Start Study</button>
+      <button onclick="endStudy()">End Study</button>
+    </footer>
   </div>
 
-  <!-- Hidden input -->
-  <input type="file" id="profilePicInput" accept="image/*" style="display:none" />
-  
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
