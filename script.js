@@ -12,51 +12,127 @@
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// Set name and profile
-let userName = '';
-let userPic = '';
+let currentChannel = 'general';
+let username = localStorage.getItem('username') || 'User';
+let profilePic = localStorage.getItem('profilePic') || '';
+let studyStartTime = null;
+let totalStudySeconds = parseInt(localStorage.getItem('studyTime')) || 0;
 
-// DOM elements
-const nameBtn = document.getElementById("setNameBtn");
-const nameInput = document.getElementById("nameInput");
-const profileInput = document.getElementById("profilePicInput");
-const chatInput = document.getElementById("chatInput");
-const sendBtn = document.getElementById("sendBtn");
-const chatBox = document.getElementById("chatBox");
+// Load existing data on startup
+window.onload = () => {
+    document.getElementById('username').textContent = username;
+    if (profilePic) {
+        document.getElementById('profile-pic').src = profilePic;
+    }
+    document.getElementById('study-time').textContent = formatTime(totalStudySeconds);
+    loadMessages(currentChannel);
+};
 
-nameBtn.onclick = () => {
-  userName = nameInput.value || "Anonymous";
-  const file = profileInput.files[0];
-  if (file) {
+// Switch channels
+function switchChannel(channel) {
+    saveMessages(currentChannel);
+    currentChannel = channel;
+    document.getElementById('channel-name').textContent = `# ${channel}`;
+    loadMessages(channel);
+}
+
+// Set Username
+function setUsername() {
+    const name = prompt('Enter your name:');
+    if (name) {
+        username = name;
+        localStorage.setItem('username', name);
+        document.getElementById('username').textContent = name;
+    }
+}
+
+// Set Profile Picture
+function setProfilePic(input) {
+    const file = input.files[0];
     const reader = new FileReader();
     reader.onload = () => {
-      userPic = reader.result;
+        profilePic = reader.result;
+        document.getElementById('profile-pic').src = profilePic;
+        localStorage.setItem('profilePic', profilePic);
     };
-    reader.readAsDataURL(file);
-  }
-};
+    if (file) {
+        reader.readAsDataURL(file);
+    }
+}
 
-sendBtn.onclick = () => {
-  if (userName && chatInput.value.trim()) {
-    db.ref("messages").push({
-      name: userName,
-      pic: userPic,
-      text: chatInput.value,
-      time: Date.now()
+// Send message
+function sendMessage() {
+    const input = document.getElementById('message-input');
+    const text = input.value.trim();
+    if (text === '') return;
+
+    const chat = document.getElementById('chat');
+    const msg = document.createElement('div');
+    msg.className = 'message';
+
+    const profileImage = document.createElement('img');
+    profileImage.src = profilePic || '';
+    profileImage.alt = 'User';
+    profileImage.width = 30;
+
+    const content = document.createElement('div');
+    content.innerHTML = `<strong>${username}:</strong> ${formatLinks(text)}`;
+    content.style.wordBreak = 'break-word';
+
+    msg.appendChild(profileImage);
+    msg.appendChild(content);
+    chat.appendChild(msg);
+
+    input.value = '';
+    saveMessages(currentChannel);
+    chat.scrollTop = chat.scrollHeight;
+}
+
+// Save messages
+function saveMessages(channel) {
+    localStorage.setItem(`messages_${channel}`, document.getElementById('chat').innerHTML);
+}
+
+// Load messages
+function loadMessages(channel) {
+    const chat = document.getElementById('chat');
+    chat.innerHTML = localStorage.getItem(`messages_${channel}`) || '';
+    chat.scrollTop = chat.scrollHeight;
+}
+
+// Format links/images
+function formatLinks(text) {
+    const urlPattern = /(https?:\/\/[^\s]+)/g;
+    return text.replace(urlPattern, (url) => {
+        if (url.match(/\.(jpeg|jpg|gif|png)$/)) {
+            return `<br><img src="${url}" style="max-width:200px; max-height:200px;" />`;
+        }
+        return `<a href="${url}" target="_blank">${url}</a>`;
     });
-    chatInput.value = "";
-  }
-};
+}
 
-// Listen for new messages
-db.ref("messages").on("child_added", (snapshot) => {
-  const msg = snapshot.val();
-  const msgDiv = document.createElement("div");
-  msgDiv.className = "message";
-  msgDiv.innerHTML = `
-    <img src="${msg.pic || 'default.png'}" width="30" height="30" />
-    <strong>${msg.name}:</strong> ${msg.text}
-  `;
-  chatBox.appendChild(msgDiv);
-  chatBox.scrollTop = chatBox.scrollHeight;
-});
+// Study Timer
+function startStudy() {
+    if (studyStartTime === null) {
+        studyStartTime = Date.now();
+        alert("Study timer started!");
+    }
+}
+
+function endStudy() {
+    if (studyStartTime !== null) {
+        const elapsed = Math.floor((Date.now() - studyStartTime) / 1000);
+        totalStudySeconds += elapsed;
+        localStorage.setItem('studyTime', totalStudySeconds.toString());
+        document.getElementById('study-time').textContent = formatTime(totalStudySeconds);
+        studyStartTime = null;
+        alert("Study timer ended!");
+    }
+}
+
+function formatTime(seconds) {
+    if (seconds < 60) return `Total: ${seconds}s`;
+    const mins = Math.floor(seconds / 60);
+    const sec = seconds % 60;
+    return `Total: ${mins}m ${sec}s`;
+}
