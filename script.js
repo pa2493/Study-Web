@@ -1,4 +1,4 @@
-// TODO: ADD YOUR CONFIG HERE
+// Your Firebase config (replace with yours)
  const firebaseConfig = {
     apiKey: "AIzaSyAcOs3hyYea3BM55R5GB-F0hObDbxgNrqA",
     authDomain: "study-web-8cd99.firebaseapp.com",
@@ -9,92 +9,92 @@
     appId: "1:320613093347:web:5bb57a0b5c83fdc0e09ad6",
     measurementId: "G-TNZD8GNJFT"
 
-firebase.initializeApp(firebaseConfig);
+const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-const storage = firebase.storage();
 
-let currentChannel = "general";
-let userName = "Anonymous";
-let userPhoto = "";
+let username = localStorage.getItem('username') || '';
+let profilePic = localStorage.getItem('profilePic') || '';
+let currentChannel = 'general'; // default channel
 
-// Refs
-const messagesDiv = document.getElementById("messages");
-const messageForm = document.getElementById("messageForm");
-const messageInput = document.getElementById("messageInput");
-const setNameBtn = document.getElementById("setNameBtn");
-const profilePicInput = document.getElementById("profilePicInput");
-
-// Load messages
-function loadMessages(channel) {
-  messagesDiv.innerHTML = "";
-  db.ref(`channels/${channel}`).on("child_added", snapshot => {
-    const msg = snapshot.val();
-    const div = document.createElement("div");
-    div.classList.add("message");
-    div.innerHTML = `<img src="${msg.photo}" /> <strong>${msg.name}</strong>: ${msg.text}`;
-    messagesDiv.appendChild(div);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+function saveMessage(channel, user, pic, text, timestamp) {
+  db.ref('channels/' + channel).push({
+    user: user,
+    profilePic: pic,
+    text: text,
+    timestamp: timestamp
   });
 }
 
-// Send message
-messageForm.addEventListener("submit", e => {
-  e.preventDefault();
-  const text = messageInput.value;
-  db.ref(`channels/${currentChannel}`).push({
-    name: userName,
-    photo: userPhoto,
-    text: text
+function displayMessage(user, pic, text, timestamp) {
+  const chat = document.getElementById('chat');
+  const msgDiv = document.createElement('div');
+  msgDiv.className = 'message';
+
+  msgDiv.innerHTML = `
+    <img src="${pic}" class="profile-pic" />
+    <div>
+      <strong>${user}</strong> <small>${new Date(timestamp).toLocaleTimeString()}</small><br/>
+      ${text}
+    </div>
+  `;
+
+  chat.appendChild(msgDiv);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function loadMessages(channel) {
+  const chat = document.getElementById('chat');
+  chat.innerHTML = '';
+  db.ref('channels/' + channel).on('child_added', snapshot => {
+    const msg = snapshot.val();
+    displayMessage(msg.user, msg.profilePic, msg.text, msg.timestamp);
   });
-  messageInput.value = "";
-});
+}
+
+document.getElementById('sendBtn').onclick = () => {
+  const msgInput = document.getElementById('messageInput');
+  const text = msgInput.value.trim();
+  if (text && username && profilePic) {
+    saveMessage(currentChannel, username, profilePic, text, Date.now());
+    msgInput.value = '';
+  }
+};
+
+document.getElementById('setNameBtn').onclick = () => {
+  const nameInput = document.getElementById('nameInput').value.trim();
+  const picInput = document.getElementById('picInput');
+  if (!nameInput || !picInput.files[0]) {
+    alert('Please set a name and upload a profile picture.');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function () {
+    profilePic = reader.result;
+    username = nameInput;
+
+    localStorage.setItem('username', username);
+    localStorage.setItem('profilePic', profilePic);
+    document.getElementById('usernameDisplay').innerText = `Hello, ${username}!`;
+    document.getElementById('setProfileSection').style.display = 'none';
+    document.getElementById('chatSection').style.display = 'block';
+    loadMessages(currentChannel);
+  };
+  reader.readAsDataURL(picInput.files[0]);
+};
 
 // Channel switching
-document.querySelectorAll("#channels button").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll("#channels button").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    currentChannel = btn.dataset.channel;
+document.querySelectorAll('.channel').forEach(button => {
+  button.addEventListener('click', () => {
+    currentChannel = button.dataset.channel;
     loadMessages(currentChannel);
   });
 });
 
-// Set name & photo
-setNameBtn.addEventListener("click", () => {
-  const name = prompt("Enter your name:");
-  if (!name) return;
-
-  profilePicInput.click();
-
-  profilePicInput.onchange = () => {
-    const file = profilePicInput.files[0];
-    if (!file) return;
-
-    const storageRef = storage.ref("profiles/" + file.name);
-    storageRef.put(file).then(snapshot => {
-      snapshot.ref.getDownloadURL().then(url => {
-        userName = name;
-        userPhoto = url;
-        alert("Profile set successfully!");
-      });
-    });
-  };
-});
-
-// Study timer
-let startTime = null;
-document.getElementById("startStudy").onclick = () => {
-  startTime = Date.now();
-  alert("Study started!");
-};
-
-document.getElementById("endStudy").onclick = () => {
-  if (!startTime) return alert("Start first!");
-  const mins = Math.floor((Date.now() - startTime) / 60000);
-  document.getElementById("studyTime").textContent = `Time studied: ${mins} mins`;
-  startTime = null;
-};
-
-// Load default
-loadMessages(currentChannel);
-document.querySelector('[data-channel="general"]').classList.add("active");
+// Initial check
+if (username && profilePic) {
+  document.getElementById('usernameDisplay').innerText = `Hello, ${username}!`;
+  document.getElementById('setProfileSection').style.display = 'none';
+  document.getElementById('chatSection').style.display = 'block';
+  loadMessages(currentChannel);
+}
