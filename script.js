@@ -1,4 +1,4 @@
-// Your Firebase config (replace with yours)
+// Your Firebase Config
  const firebaseConfig = {
     apiKey: "AIzaSyAcOs3hyYea3BM55R5GB-F0hObDbxgNrqA",
     authDomain: "study-web-8cd99.firebaseapp.com",
@@ -12,89 +12,87 @@
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let username = localStorage.getItem('username') || '';
-let profilePic = localStorage.getItem('profilePic') || '';
-let currentChannel = 'general'; // default channel
+let currentUser = { name: "", pic: "" };
+let currentChannel = "general";
 
-function saveMessage(channel, user, pic, text, timestamp) {
-  db.ref('channels/' + channel).push({
-    user: user,
-    profilePic: pic,
+// Set User
+function setUser() {
+  const nameInput = document.getElementById('username').value.trim();
+  const picInput = document.getElementById('profile-pic').files[0];
+
+  if (!nameInput) return alert("Enter a name");
+
+  if (picInput) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      currentUser.name = nameInput;
+      currentUser.pic = e.target.result;
+      alert("User set successfully!");
+    };
+    reader.readAsDataURL(picInput);
+  } else {
+    currentUser.name = nameInput;
+    currentUser.pic = ""; // default or blank
+    alert("User set successfully!");
+  }
+}
+
+// Switch Channels
+function switchChannel(channel) {
+  currentChannel = channel;
+  document.getElementById('chat-box').innerHTML = "";
+  listenToMessages();
+}
+
+// Send Message
+function sendMessage() {
+  const text = document.getElementById('message').value.trim();
+  if (!text || !currentUser.name) return alert("Set your name and type something!");
+
+  const msg = {
+    name: currentUser.name,
+    pic: currentUser.pic,
     text: text,
-    timestamp: timestamp
-  });
-}
-
-function displayMessage(user, pic, text, timestamp) {
-  const chat = document.getElementById('chat');
-  const msgDiv = document.createElement('div');
-  msgDiv.className = 'message';
-
-  msgDiv.innerHTML = `
-    <img src="${pic}" class="profile-pic" />
-    <div>
-      <strong>${user}</strong> <small>${new Date(timestamp).toLocaleTimeString()}</small><br/>
-      ${text}
-    </div>
-  `;
-
-  chat.appendChild(msgDiv);
-  chat.scrollTop = chat.scrollHeight;
-}
-
-function loadMessages(channel) {
-  const chat = document.getElementById('chat');
-  chat.innerHTML = '';
-  db.ref('channels/' + channel).on('child_added', snapshot => {
-    const msg = snapshot.val();
-    displayMessage(msg.user, msg.profilePic, msg.text, msg.timestamp);
-  });
-}
-
-document.getElementById('sendBtn').onclick = () => {
-  const msgInput = document.getElementById('messageInput');
-  const text = msgInput.value.trim();
-  if (text && username && profilePic) {
-    saveMessage(currentChannel, username, profilePic, text, Date.now());
-    msgInput.value = '';
-  }
-};
-
-document.getElementById('setNameBtn').onclick = () => {
-  const nameInput = document.getElementById('nameInput').value.trim();
-  const picInput = document.getElementById('picInput');
-  if (!nameInput || !picInput.files[0]) {
-    alert('Please set a name and upload a profile picture.');
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = function () {
-    profilePic = reader.result;
-    username = nameInput;
-
-    localStorage.setItem('username', username);
-    localStorage.setItem('profilePic', profilePic);
-    document.getElementById('usernameDisplay').innerText = `Hello, ${username}!`;
-    document.getElementById('setProfileSection').style.display = 'none';
-    document.getElementById('chatSection').style.display = 'block';
-    loadMessages(currentChannel);
+    time: Date.now()
   };
-  reader.readAsDataURL(picInput.files[0]);
-};
 
-// Channel switching
-document.querySelectorAll('.channel').forEach(button => {
-  button.addEventListener('click', () => {
-    currentChannel = button.dataset.channel;
-    loadMessages(currentChannel);
-  });
-});
-
-// Initial check
-if (username && profilePic) {
-  document.getElementById('usernameDisplay').innerText = `Hello, ${username}!`;
-  document.getElementById('setProfileSection').style.display = 'none';
-  document.getElementById('chatSection').style.display = 'block';
-  loadMessages(currentChannel);
+  db.ref("channels/" + currentChannel).push(msg);
+  document.getElementById('message').value = "";
 }
+
+// Listen for Messages
+function listenToMessages() {
+  db.ref("channels/" + currentChannel).on("value", (snapshot) => {
+    const chatBox = document.getElementById('chat-box');
+    chatBox.innerHTML = "";
+    snapshot.forEach(child => {
+      const msg = child.val();
+      const div = document.createElement("div");
+      div.className = "message";
+      div.innerHTML = `
+        <img src="${msg.pic || 'https://via.placeholder.com/40'}">
+        <strong>${msg.name}</strong>: ${msg.text}
+      `;
+      chatBox.appendChild(div);
+    });
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
+}
+
+// Study Timer
+let startTime = null;
+
+function startStudy() {
+  startTime = Date.now();
+  alert("Study started!");
+}
+
+function endStudy() {
+  if (!startTime) return alert("Start study first!");
+  const minutes = Math.floor((Date.now() - startTime) / 60000);
+  alert(`You studied for ${minutes} minutes.`);
+  startTime = null;
+}
+
+// Start with default channel
+listenToMessages();
