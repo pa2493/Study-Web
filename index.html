@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Study App</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2>Channels</h2>
+        <button onclick="switchChannel('general')"># general</button>
+        <button onclick="switchChannel('doubts')"># doubts</button>
+        <button onclick="switchChannel('resources')"># resources</button>
+        <button onclick="switchChannel('study')"># study</button>
+        <button onclick="switchChannel('vc')">🔊 Voice Chat</button>
+        <hr style="border-color: #444" />
+        <input type="file" accept="image/*" onchange="setProfilePic(this)" />
+        <button onclick="setUsername()">Set Name</button>
+    </div>
+
+    <!-- Main Section -->
+    <div class="main">
+        <div class="header">
+            <h1 id="channel-name"># general</h1>
+            <div class="user-info">
+                <span id="study-time" class="study-timer">Total: 0s</span>
+                <img id="profile-pic" src="" alt="Profile" />
+                <span id="username">User</span>
+            </div>
+        </div>
+
+        <div id="chat" class="chat"></div>
+
+        <div class="input-area">
+            <input type="text" id="message-input" placeholder="Type your message..." />
+            <button onclick="sendMessage()">Send</button>
+            <button onclick="startStudy()">Start Study</button>
+            <button onclick="endStudy()">End Study</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
